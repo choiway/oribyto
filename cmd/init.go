@@ -51,9 +51,9 @@ type Settings struct {
 
 // WriteSettings writes settings to a file
 func WriteSettings(settings Settings, filename string) {
-	out, err1 := os.Create(filename)
-	if err1 != nil {
-		fmt.Printf("File write error: %v\n", err1)
+	out, err := os.Create(filename)
+	if err != nil {
+		fmt.Printf("File write error: %v\n", err)
 		os.Exit(1)
 	}
 	w := bufio.NewWriter(out)
@@ -67,9 +67,9 @@ func WriteSettings(settings Settings, filename string) {
 func ReadSettings(filename string) Settings {
 	var b Settings
 
-	in, err2 := os.Open(filename)
-	if err2 != nil {
-		fmt.Printf("File read error: %v\n", err2)
+	in, err := os.Open(filename)
+	if err != nil {
+		fmt.Printf("File read error: %v\n", err)
 		os.Exit(1)
 	}
 	r := bufio.NewReader(in)
