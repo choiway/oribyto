@@ -57,7 +57,7 @@ to quickly create a Cobra application.`,
 func init() {
 	rootCmd.AddCommand(encryptCmd)
 
-	encryptCmd.Flags().String("file", "", "File to encrypt")
+	encryptCmd.Flags().String("file", "", "Path to file to encrypt. Required")
 	encryptCmd.Flags().String("recipient", "", "recipent to encrypt")
 	encryptCmd.MarkFlagsRequiredTogether("file", "recipient")
 

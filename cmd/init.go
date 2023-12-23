@@ -10,8 +10,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 
 	"bufio"
+	"bytes"
 	"encoding/gob"
 	"github.com/spf13/cobra"
+	"os/exec"
+	"strings"
 )
 
 // initCmd represents the init command
@@ -34,13 +37,14 @@ to quickly create a Cobra application.`,
 		// }
 		//
 		// fmt.Println(string(output))
+		GetSecretKeys()
 		settings := Settings{DefaultKeyEmail: "waynechoi@gmail.com"}
-        path := "settings.gob"
+		path := "settings.gob"
 		// write
 		WriteSettings(settings, path)
 
 		// read
-        s := ReadSettings(path)
+		s := ReadSettings(path)
 		fmt.Printf("%q", s)
 	},
 }
@@ -63,6 +67,60 @@ func WriteSettings(settings Settings, filename string) {
 	out.Close()
 }
 
+type GpgKey struct {
+	UID         string
+	Email       string
+	Fingerprint string
+}
+
+func GetSecretKeys() {
+	b, err := exec.Command("gpg", "--list-secret-keys", "--with-colons").Output()
+	if err != nil {
+		fmt.Println("The following error ocurred while trying to get list secret keys: ", err)
+		os.Exit(1)
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(b))
+	secretGpgKeys := []GpgKey{}
+	var newGpgKey GpgKey
+	pk := ""
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		words := strings.Split(line, ":")
+
+		k := words[0]
+
+		switch k {
+		case "sec":
+			// Initialize new GpgKey
+			newGpgKey = GpgKey{}
+		case "uid":
+			newGpgKey.UID = words[9]
+            newGpgKey.Email = strings.TrimSuffix(strings.SplitAfter(words[9], "<")[1], ">")
+		case "fpr":
+			if pk == "sec" {
+				newGpgKey.Fingerprint = words[9]
+			}
+		case "ssb":
+			// append to secretGpgKeys
+			secretGpgKeys = append(secretGpgKeys, newGpgKey)
+		}
+
+		pk = k
+	}
+
+	// print secretGpgKeys
+	for _, gpgKey := range secretGpgKeys {
+		fmt.Println(gpgKey)
+	}
+
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error ocurred while scanning keys", err)
+		os.Exit(1)
+	}
+}
+
 // ReadSettings reads settings from a file
 func ReadSettings(filename string) Settings {
 	var b Settings
@@ -75,7 +133,7 @@ func ReadSettings(filename string) Settings {
 	r := bufio.NewReader(in)
 	dec := gob.NewDecoder(r)
 	dec.Decode(&b)
-    return b
+	return b
 }
 
 func init() {
